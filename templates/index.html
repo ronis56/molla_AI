@@ -1,0 +1,3225 @@
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#030508">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<title>mollaAI · Neural Core</title>
+
+<style>
+:root{
+  --cyan:#00f2fe;
+  --blue:#4facfe;
+  --violet:#7f00ff;
+  --magenta:#e100ff;
+  --green:#5ef7c4;
+  --danger:#ff4757;
+  --bg:#030508;
+  --line:rgba(0,242,254,.16);
+  --text:#dbe7f5;
+  --muted:#717d96;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+
+  /* safe-area insets */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+
+  /* fluid sizing tokens */
+  --gap: clamp(8px, 1.4vw, 16px);
+  --pad-x: clamp(10px, 2vw, 20px);
+  --pad-y: clamp(8px, 1.6vh, 16px);
+  --radius-lg: clamp(12px, 1.6vw, 18px);
+  --radius-md: clamp(9px, 1.2vw, 14px);
+
+  --fs-body: clamp(13px, 1.05vw + 10px, 15px);
+  --fs-meta: clamp(9px, 0.55vw + 7.5px, 11px);
+  --fs-brand: clamp(13px, 0.9vw + 10px, 16px);
+
+  --touch-min: 44px;
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ height:100%; }
+
+html{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:var(--fs-body);
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior:none;
+  padding-left:var(--sal);
+  padding-right:var(--sar);
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:9999;
+  background:repeating-linear-gradient(
+    180deg,
+    rgba(255,255,255,.015) 0px,
+    rgba(255,255,255,.015) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode:overlay;
+}
+
+.app{
+  height:100vh;
+  height:100dvh;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  min-height:0;
+}
+
+/* =========================================================
+   ACTIVATION OVERLAY
+========================================================= */
+
+.activate{
+  position:fixed;
+  inset:0;
+  z-index:9000;
+  display:grid;
+  place-items:center;
+  padding:calc(16px + var(--sat)) calc(16px + var(--sar)) calc(16px + var(--sab)) calc(16px + var(--sal));
+  background:rgba(3,5,8,.82);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  cursor:pointer;
+  transition:opacity .35s ease, visibility .35s ease;
+}
+
+.activate.is-hidden{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+
+.activate__inner{
+  text-align:center;
+  padding:clamp(20px, 4vw, 34px) clamp(24px, 5vw, 46px);
+  border:1px solid rgba(0,242,254,.35);
+  border-radius:20px;
+  background:linear-gradient(180deg, rgba(9,27,46,.7), rgba(3,5,8,.85));
+  box-shadow:0 0 60px rgba(0,242,254,.12);
+  animation:breatheCard 3.6s ease-in-out infinite;
+  max-width:min(420px, 92vw);
+}
+
+@keyframes breatheCard{
+  0%,100%{ box-shadow:0 0 60px rgba(0,242,254,.12); }
+  50%    { box-shadow:0 0 90px rgba(0,242,254,.24); }
+}
+
+.activate__icon{
+  width:clamp(44px, 8vw, 52px);
+  height:clamp(44px, 8vw, 52px);
+  margin:0 auto 18px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  border:1.5px solid var(--cyan);
+  color:var(--cyan);
+  box-shadow:0 0 26px rgba(0,242,254,.5);
+  animation:beat 2s ease-in-out infinite;
+}
+
+.activate__icon svg{
+  width:clamp(20px, 4vw, 24px);
+  height:clamp(20px, 4vw, 24px);
+}
+
+.activate__title{
+  font-family:var(--mono);
+  font-size:clamp(11px, 2.4vw, 13px);
+  letter-spacing:.24em;
+  color:var(--cyan);
+  text-transform:uppercase;
+  text-shadow:0 0 14px rgba(0,242,254,.55);
+}
+
+.activate__sub{
+  margin-top:10px;
+  font-size:clamp(11px, 2.2vw, 13px);
+  color:var(--muted);
+  letter-spacing:.05em;
+}
+
+/* =========================================================
+   HUD
+========================================================= */
+
+.hud{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:clamp(6px, 1.2vw, 12px);
+  padding:calc(var(--pad-y)) var(--pad-x);
+  padding-top:calc(var(--pad-y) + var(--sat));
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg, rgba(9,27,46,.75), rgba(3,5,8,0));
+  flex-wrap:nowrap;
+  min-width:0;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:clamp(6px, 1vw, 10px);
+  min-width:0;
+  flex:1 1 auto;
+}
+
+.brand__dot{
+  width:9px; height:9px; border-radius:50%;
+  background:var(--cyan);
+  box-shadow:0 0 10px var(--cyan), 0 0 22px rgba(0,242,254,.55);
+  animation:beat 2.4s ease-in-out infinite;
+  flex:none;
+}
+
+body.is-speaking .brand__dot{
+  animation-duration:.7s;
+  background:var(--magenta);
+  box-shadow:0 0 12px var(--magenta), 0 0 26px rgba(225,0,255,.6);
+}
+
+body.is-processing .brand__dot{ animation-duration:1s; }
+
+@keyframes beat{
+  0%,100%{ opacity:1; transform:scale(1); }
+  50%    { opacity:.55; transform:scale(.75); }
+}
+
+.brand__name{
+  font-family:var(--mono);
+  font-size:var(--fs-brand);
+  letter-spacing:.16em;
+  color:#eafcff;
+  text-shadow:0 0 12px rgba(0,242,254,.45);
+  flex:none;
+}
+
+.brand__sub{
+  font-family:var(--mono);
+  font-size:clamp(9px, 0.9vw + 6px, 10px);
+  letter-spacing:.12em;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  min-width:0;
+}
+
+.hud__right{
+  display:flex;
+  align-items:center;
+  gap:clamp(4px, 0.8vw, 8px);
+  flex:none;
+  flex-wrap:nowrap;
+}
+
+.pill{
+  font-family:var(--mono);
+  font-size:clamp(8.5px, 0.8vw + 6px, 10px);
+  letter-spacing:.12em;
+  padding:5px 10px;
+  border-radius:999px;
+  white-space:nowrap;
+  border:1px solid rgba(0,242,254,.25);
+  background:rgba(0,242,254,.05);
+  color:rgba(0,242,254,.85);
+  transition:all .25s ease;
+}
+
+.pill--ghost{
+  color:var(--muted);
+  border-color:rgba(113,125,150,.25);
+  background:transparent;
+}
+
+.pill--ok{
+  color:var(--green);
+  border-color:rgba(94,247,196,.4);
+  background:rgba(94,247,196,.08);
+}
+
+.pill--bad{
+  color:var(--danger);
+  border-color:rgba(255,71,87,.4);
+  background:rgba(255,71,87,.08);
+}
+
+.pill--voice{
+  color:var(--green);
+  border-color:rgba(94,247,196,.5);
+  background:rgba(94,247,196,.1);
+  animation:beat 2s ease-in-out infinite;
+}
+
+.icon-btn{
+  display:grid;
+  place-items:center;
+  width:34px;
+  height:34px;
+  border-radius:9px;
+  border:1px solid rgba(0,242,254,.25);
+  background:rgba(0,242,254,.05);
+  color:rgba(0,242,254,.85);
+  cursor:pointer;
+  transition:all .18s ease;
+  flex:none;
+  touch-action:manipulation;
+}
+
+.icon-btn:hover{
+  background:rgba(0,242,254,.12);
+  border-color:rgba(0,242,254,.5);
+  color:#eafcff;
+}
+
+.icon-btn.is-off{
+  color:rgba(113,125,150,.6);
+  border-color:rgba(113,125,150,.25);
+  background:transparent;
+}
+
+.icon-btn.is-speaking{
+  color:var(--magenta);
+  border-color:rgba(225,0,255,.6);
+  background:rgba(225,0,255,.1);
+  box-shadow:0 0 18px rgba(225,0,255,.2);
+}
+
+.icon-btn svg{ width:15px; height:15px; }
+
+/* =========================================================
+   STAGE
+========================================================= */
+
+.stage{
+  min-height:0;
+  min-width:0;
+  display:grid;
+  grid-template-columns:minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap:var(--gap);
+  padding:var(--pad-y) var(--pad-x) calc(var(--pad-y) + var(--sab));
+}
+
+/* =========================================================
+   CORE
+========================================================= */
+
+.core-panel{
+  position:relative;
+  min-height:0;
+  min-width:0;
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  background:radial-gradient(circle at 50% 50%, rgba(9,27,46,.95), rgba(3,5,8,.98));
+  box-shadow:inset 0 0 80px rgba(0,242,254,.06), 0 0 0 1px rgba(0,0,0,.5);
+}
+
+.core-panel::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:2;
+  background:radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,.55) 100%);
+}
+
+.core-panel svg{ display:block; width:100%; height:100%; }
+
+.ring-group{
+  transform-box:view-box;
+  transform-origin:400px 300px;
+}
+
+.ring-a{ animation:spin 52s linear infinite; }
+.ring-b{ animation:spin 30s linear infinite reverse; }
+
+body.is-speaking .ring-a{ animation-duration:14s; }
+body.is-speaking .ring-b{ animation-duration:9s; }
+body.is-processing .ring-a{ animation-duration:30s; }
+body.is-processing .ring-b{ animation-duration:18s; }
+body.is-listening .ring-a{ animation-duration:38s; }
+body.is-listening .ring-b{ animation-duration:22s; }
+
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+#coreHalo{
+  transform-box:view-box;
+  transform-origin:400px 300px;
+  animation:breathe 4.6s ease-in-out infinite;
+  transition:filter .3s ease;
+}
+
+body.is-speaking #coreHalo{
+  animation-duration:1.4s;
+  filter:url(#neonGlow) hue-rotate(-25deg) brightness(1.2);
+}
+
+body.is-processing #coreHalo{ animation-duration:2.2s; }
+
+body.is-listening #coreHalo{
+  animation-duration:2.8s;
+  filter:url(#neonGlow) hue-rotate(20deg) brightness(1.1);
+}
+
+@keyframes breathe{
+  0%,100%{ transform:scale(1); }
+  50%    { transform:scale(1.07); }
+}
+
+#corePulse{
+  transform-box:view-box;
+  transform-origin:400px 300px;
+  animation:ping 3.4s ease-out infinite;
+}
+
+body.is-speaking #corePulse{ animation-duration:1.6s; stroke:#e100ff; }
+body.is-processing #corePulse{ animation-duration:1.9s; }
+body.is-listening #corePulse{ animation-duration:2.4s; stroke:#5ef7c4; }
+
+@keyframes ping{
+  0%  { transform:scale(.88); opacity:.55; }
+  70% { transform:scale(1.55); opacity:0; }
+  100%{ transform:scale(1.55); opacity:0; }
+}
+
+.eq-bar{
+  transform-box:fill-box;
+  transform-origin:50% 100%;
+  transform:scaleY(.06);
+  will-change:transform;
+}
+
+/* =========================================================
+   CONSOLE
+========================================================= */
+
+.console{
+  min-height:0;
+  min-width:0;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  background:linear-gradient(180deg, rgba(9,27,46,.55), rgba(3,5,8,.85));
+  box-shadow:inset 0 0 60px rgba(127,0,255,.05);
+}
+
+.console__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:clamp(8px, 1.4vh, 12px) clamp(10px, 1.6vw, 16px);
+  border-bottom:1px solid var(--line);
+  font-family:var(--mono);
+  font-size:var(--fs-meta);
+  letter-spacing:.16em;
+  color:var(--muted);
+  min-width:0;
+}
+
+.console__head-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+  overflow:hidden;
+}
+
+.console__head-left > span:last-child{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.live-dot{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 8px var(--green);
+  animation:beat 1.6s ease-in-out infinite;
+  flex:none;
+}
+
+body.is-speaking .live-dot{
+  background:var(--magenta);
+  box-shadow:0 0 10px var(--magenta);
+  animation-duration:.6s;
+}
+
+.ghost-btn{
+  background:none;
+  border:1px solid rgba(0,242,254,.25);
+  border-radius:8px;
+  color:rgba(0,242,254,.75);
+  font-family:var(--mono);
+  font-size:clamp(9px, 0.7vw + 6px, 9.5px);
+  letter-spacing:.14em;
+  padding:6px 10px;
+  cursor:pointer;
+  transition:all .18s ease;
+  touch-action:manipulation;
+  flex:none;
+}
+
+.ghost-btn:hover{
+  background:rgba(0,242,254,.1);
+  border-color:rgba(0,242,254,.5);
+  color:#eafcff;
+}
+
+/* =========================================================
+   LOG
+========================================================= */
+
+.log{
+  min-height:0;
+  min-width:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:clamp(10px, 1.6vw, 16px);
+  display:flex;
+  flex-direction:column;
+  gap:clamp(8px, 1.2vw, 12px);
+  scrollbar-width:thin;
+  scrollbar-color:rgba(0,242,254,.3) transparent;
+}
+
+.log::-webkit-scrollbar{ width:6px; }
+.log::-webkit-scrollbar-track{ background:transparent; }
+.log::-webkit-scrollbar-thumb{
+  background:rgba(0,242,254,.22);
+  border-radius:8px;
+}
+.log::-webkit-scrollbar-thumb:hover{ background:rgba(0,242,254,.4); }
+
+/* =========================================================
+   MESSAGES
+========================================================= */
+
+.msg{
+  max-width:92%;
+  padding:clamp(8px, 1.2vw, 10px) clamp(11px, 1.4vw, 14px);
+  border-radius:14px;
+  border:1px solid transparent;
+  animation:msgIn .28s cubic-bezier(.22,1,.36,1) both;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+
+@keyframes msgIn{
+  from{ opacity:0; transform:translateY(9px); }
+  to  { opacity:1; transform:none; }
+}
+
+.msg--user{
+  align-self:flex-end;
+  border-color:rgba(0,242,254,.32);
+  background:linear-gradient(135deg, rgba(0,242,254,.11), rgba(79,172,254,.04));
+  border-bottom-right-radius:4px;
+}
+
+.msg--ai{
+  align-self:flex-start;
+  border-color:rgba(127,0,255,.34);
+  background:linear-gradient(135deg, rgba(127,0,255,.13), rgba(225,0,255,.04));
+  border-bottom-left-radius:4px;
+  transition:border-color .3s ease,box-shadow .3s ease;
+}
+
+.msg--ai.is-speaking{
+  border-color:rgba(225,0,255,.7);
+  box-shadow:0 0 24px rgba(225,0,255,.18);
+}
+
+.msg--ai.is-interrupted{
+  border-color:rgba(255,180,0,.55);
+  box-shadow:0 0 20px rgba(255,180,0,.15);
+}
+
+.msg.is-error{
+  border-color:rgba(255,71,87,.5);
+  background:rgba(255,71,87,.08);
+}
+
+.msg__meta{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:6px;
+  font-family:var(--mono);
+  font-size:var(--fs-meta);
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  min-width:0;
+  flex-wrap:wrap;
+}
+
+.msg--user .msg__meta{ color:rgba(0,242,254,.6); }
+.msg--ai   .msg__meta{ color:rgba(225,0,255,.65); }
+.msg.is-error .msg__meta{ color:rgba(255,71,87,.8); }
+
+.msg__info{
+  opacity:.7;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:100%;
+}
+
+.msg__body{
+  font-size:var(--fs-body);
+  line-height:1.58;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+/* ---------- RICH / STRUCTURED BODY ---------- */
+
+.msg__body--rich{ white-space:normal; }
+
+.msg__body--rich > *{ animation:mdIn .28s cubic-bezier(.22,1,.36,1) both; }
+
+@keyframes mdIn{
+  from{ opacity:0; transform:translateY(5px); }
+  to  { opacity:1; transform:none; }
+}
+
+.md-p{ margin:0 0 9px; }
+.md-p:last-child{ margin-bottom:0; }
+
+.md-h{
+  margin:13px 0 6px;
+  color:#eafcff;
+  font-weight:700;
+  letter-spacing:.03em;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+.md-h:first-child{ margin-top:0; }
+.md-h1{ font-size:1.18em; }
+.md-h2{ font-size:1.11em; }
+.md-h3{ font-size:1.05em; color:#d5f4ff; }
+.md-h4,.md-h5,.md-h6{
+  font-family:var(--mono);
+  font-size:.78em;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:rgba(0,242,254,.9);
+  text-shadow:0 0 10px rgba(0,242,254,.25);
+}
+
+.md-ul,.md-ol{ margin:6px 0 10px; padding-left:18px; }
+.md-ul{ list-style:none; padding-left:16px; }
+.md-ul li{ position:relative; margin:4px 0; overflow-wrap:anywhere; }
+.md-ul li::before{
+  content:"▸";
+  position:absolute;
+  left:-14px;
+  color:var(--cyan);
+  text-shadow:0 0 8px rgba(0,242,254,.5);
+}
+.md-ol{ list-style:decimal; }
+.md-ol li{ margin:4px 0; padding-left:2px; overflow-wrap:anywhere; }
+.md-ol li::marker{
+  color:var(--cyan);
+  font-family:var(--mono);
+  font-size:.85em;
+}
+
+.md-quote{
+  margin:9px 0;
+  padding:7px 12px;
+  border-left:2px solid rgba(0,242,254,.45);
+  border-radius:0 9px 9px 0;
+  background:rgba(0,242,254,.05);
+  color:#c7d8ee;
+  font-style:italic;
+  overflow-wrap:anywhere;
+}
+
+.md-hr{
+  border:0;
+  height:1px;
+  margin:11px 0;
+  background:linear-gradient(90deg, transparent, rgba(0,242,254,.55), transparent);
+}
+
+.md-comment{
+  margin:11px 0 5px;
+  font-family:var(--mono);
+  font-size:.72em;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:rgba(113,125,150,.95);
+  overflow-wrap:anywhere;
+}
+.md-comment:first-child{ margin-top:0; }
+
+.md-code{
+  margin:9px 0;
+  padding:10px 12px;
+  border:1px solid rgba(0,242,254,.18);
+  border-radius:10px;
+  background:rgba(0,0,0,.45);
+  overflow:auto;
+  font-family:var(--mono);
+  font-size:.82em;
+  line-height:1.55;
+  color:#bfe9ff;
+  white-space:pre;
+  -webkit-overflow-scrolling:touch;
+}
+
+.md-ic{
+  font-family:var(--mono);
+  font-size:.88em;
+  padding:1px 5px;
+  border-radius:5px;
+  background:rgba(0,242,254,.1);
+  border:1px solid rgba(0,242,254,.2);
+  color:#9fe9ff;
+  overflow-wrap:anywhere;
+}
+
+.md-a{
+  color:var(--cyan);
+  text-decoration:underline;
+  text-underline-offset:2px;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+.msg__body--rich strong{ color:#eafcff; font-weight:700; }
+.msg__body--rich em{ color:#c7d8ee; }
+.msg__body--rich del{ opacity:.55; }
+
+.cursor{
+  display:inline-block;
+  width:7px;
+  height:.95em;
+  background:var(--magenta);
+  vertical-align:middle;
+  margin-left:2px;
+  animation:cursorBlink .8s steps(1) infinite;
+}
+
+@keyframes cursorBlink{ 50%{ opacity:0; } }
+
+/* =========================================================
+   TYPING
+========================================================= */
+
+.typing{ display:flex; gap:5px; padding:3px 0; }
+
+.typing i{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--magenta);
+  box-shadow:0 0 8px rgba(225,0,255,.8);
+  animation:blink 1.2s infinite;
+}
+
+.typing i:nth-child(2){ animation-delay:.18s; }
+.typing i:nth-child(3){ animation-delay:.36s; }
+
+@keyframes blink{
+  0%,60%,100%{ opacity:.22; transform:translateY(0); }
+  30%        { opacity:1;   transform:translateY(-3px); }
+}
+
+/* =========================================================
+   COMPOSER
+========================================================= */
+
+.composer{
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) auto;
+  gap:clamp(6px, 1vw, 10px);
+  align-items:end;
+  padding:clamp(8px, 1.4vw, 14px);
+  border-top:1px solid var(--line);
+  background:rgba(3,5,8,.7);
+}
+
+#input{
+  width:100%;
+  min-width:0;
+  min-height:var(--touch-min);
+  max-height:min(160px, 32vh);
+  resize:none;
+  padding:12px 14px;
+  border-radius:var(--radius-md);
+  border:1px solid rgba(0,242,254,.22);
+  background:rgba(3,5,8,.85);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:var(--fs-body);
+  line-height:20px;
+  outline:none;
+  transition:border-color .18s, box-shadow .18s, background .18s;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(0,242,254,.55) transparent;
+  overflow-y:auto;
+  -webkit-appearance:none;
+  appearance:none;
+}
+
+#input::-webkit-scrollbar{ width:4px; }
+#input::-webkit-scrollbar-track{
+  background:transparent;
+  margin:6px 0;
+}
+#input::-webkit-scrollbar-thumb{
+  background:linear-gradient(180deg,
+    rgba(0,242,254,.55),
+    rgba(127,0,255,.55));
+  border-radius:999px;
+  border:none;
+  min-height:24px;
+}
+#input::-webkit-scrollbar-thumb:hover{
+  background:linear-gradient(180deg,
+    rgba(0,242,254,.9),
+    rgba(225,0,255,.9));
+  box-shadow:0 0 8px rgba(0,242,254,.5);
+}
+#input::-webkit-scrollbar-button{
+  display:none;
+  width:0;
+  height:0;
+}
+#input::-webkit-scrollbar-corner{ background:transparent; }
+
+#input::placeholder{ color:rgba(113,125,150,.75); }
+
+#input:focus{
+  border-color:rgba(0,242,254,.55);
+  background:rgba(3,5,8,.95);
+  box-shadow:0 0 0 3px rgba(0,242,254,.09);
+}
+
+.send{
+  flex:none;
+  width:var(--touch-min);
+  height:var(--touch-min);
+  display:grid;
+  place-items:center;
+  border-radius:var(--radius-md);
+  border:1px solid rgba(0,242,254,.45);
+  background:linear-gradient(135deg, rgba(0,242,254,.18), rgba(127,0,255,.24));
+  color:#eafcff;
+  cursor:pointer;
+  transition:transform .16s, box-shadow .16s, opacity .16s;
+  touch-action:manipulation;
+}
+
+.send:hover:not(:disabled){
+  transform:translateY(-1px);
+  box-shadow:0 0 20px rgba(0,242,254,.4);
+}
+
+.send:disabled{ opacity:.35; cursor:not-allowed; }
+.send svg{ width:20px; height:20px; }
+
+/* =========================================================
+   FACEBOOK APPROVAL
+========================================================= */
+
+.fb-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:12px;
+}
+
+.fb-btn{
+  border:1px solid rgba(0,242,254,.30);
+  border-radius:9px;
+  padding:9px 12px;
+  background:rgba(0,242,254,.06);
+  color:rgba(0,242,254,.88);
+  font-family:var(--mono);
+  font-size:clamp(9px, 0.7vw + 6px, 9.5px);
+  letter-spacing:.12em;
+  cursor:pointer;
+  transition:all .18s ease;
+  touch-action:manipulation;
+  min-height:36px;
+}
+
+.fb-btn:hover{
+  background:rgba(0,242,254,.13);
+  border-color:rgba(0,242,254,.60);
+  color:#eafcff;
+  box-shadow:0 0 14px rgba(0,242,254,.14);
+}
+
+.fb-btn--publish{
+  border-color:rgba(94,247,196,.42);
+  background:rgba(94,247,196,.07);
+  color:var(--green);
+}
+
+.fb-btn--publish:hover{
+  background:rgba(94,247,196,.14);
+  border-color:rgba(94,247,196,.72);
+}
+
+.fb-btn--cancel{
+  color:var(--muted);
+  border-color:rgba(113,125,150,.25);
+  background:transparent;
+}
+
+.fb-btn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+.fb-approval{
+  margin-top:12px;
+  padding:clamp(10px, 1.4vw, 12px);
+  border:1px solid rgba(94,247,196,.28);
+  border-radius:12px;
+  background:linear-gradient(135deg, rgba(94,247,196,.07), rgba(0,242,254,.025));
+  animation:msgIn .3s cubic-bezier(.22,1,.36,1) both;
+  min-width:0;
+}
+
+.fb-approval.is-pending{
+  border-color:rgba(94,247,196,.55);
+  box-shadow:0 0 22px rgba(94,247,196,.14);
+}
+
+.fb-approval__title{
+  font-family:var(--mono);
+  font-size:clamp(8.5px, 0.7vw + 6px, 9.5px);
+  letter-spacing:.14em;
+  color:var(--green);
+  margin-bottom:7px;
+  overflow-wrap:anywhere;
+}
+
+.fb-approval__text{
+  font-size:clamp(11.5px, 0.8vw + 8px, 12.5px);
+  line-height:1.5;
+  color:var(--text);
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  max-height:min(180px, 28vh);
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
+.fb-approval__warning{
+  margin-top:8px;
+  font-family:var(--mono);
+  font-size:clamp(8.5px, 0.7vw + 6px, 9.5px);
+  line-height:1.45;
+  color:var(--muted);
+  overflow-wrap:anywhere;
+}
+
+.fb-approval__voice{
+  margin-top:6px;
+  font-family:var(--mono);
+  font-size:clamp(8.5px, 0.7vw + 6px, 9.5px);
+  line-height:1.45;
+  letter-spacing:.05em;
+  color:rgba(0,242,254,.85);
+  overflow-wrap:anywhere;
+}
+
+.fb-status{
+  margin-top:8px;
+  font-family:var(--mono);
+  font-size:clamp(8.5px, 0.7vw + 6px, 9.5px);
+  letter-spacing:.07em;
+  color:var(--muted);
+  overflow-wrap:anywhere;
+}
+
+/* =========================================================
+   RESPONSIVE — TABLET / SMALL LAPTOP  (≤ 1100px)
+========================================================= */
+
+@media (max-width:1100px){
+  .stage{
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .msg{ max-width:94%; }
+}
+
+/* =========================================================
+   RESPONSIVE — TABLET PORTRAIT  (≤ 900px)
+========================================================= */
+
+@media (max-width:900px){
+  .stage{
+    grid-template-columns:1fr;
+    grid-template-rows:minmax(0, 38fr) minmax(0, 62fr);
+  }
+  .brand__sub{ display:none; }
+  .msg{ max-width:95%; }
+}
+
+/* =========================================================
+   RESPONSIVE — LARGE PHONE  (≤ 700px)
+========================================================= */
+
+@media (max-width:700px){
+  :root{
+    --gap:10px;
+    --pad-x:12px;
+    --pad-y:8px;
+  }
+
+  .stage{
+    grid-template-rows:minmax(0, 32fr) minmax(0, 68fr);
+  }
+
+  .hud{
+    padding:10px 12px;
+    padding-top:calc(10px + var(--sat));
+  }
+
+  .hud__right{
+    gap:5px;
+  }
+
+  /* hide decorative ghost pill earlier */
+  .hud__right .pill--ghost{ display:none; }
+
+  .pill{
+    padding:4px 9px;
+    letter-spacing:.10em;
+  }
+
+  .icon-btn{
+    width:36px;
+    height:36px;
+  }
+
+  .msg{
+    max-width:96%;
+  }
+
+  .md-code{
+    font-size:.78em;
+    padding:9px 10px;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE — SMALL PHONE  (≤ 520px)
+========================================================= */
+
+@media (max-width:520px){
+  :root{
+    --gap:8px;
+    --pad-x:10px;
+    --pad-y:6px;
+    --touch-min:42px;
+  }
+
+  .stage{
+    grid-template-rows:minmax(0, 28fr) minmax(0, 72fr);
+  }
+
+  .hud{
+    gap:6px;
+    padding:8px 10px;
+    padding-top:calc(8px + var(--sat));
+  }
+
+  .brand{ gap:6px; }
+  .brand__name{ letter-spacing:.12em; }
+
+  /* collapse the voice state pill label — keep the LED only */
+  #voicePill{
+    display:none;
+  }
+
+  .hud__right .pill{ padding:4px 8px; }
+
+  .msg{
+    max-width:98%;
+    padding:8px 11px;
+    border-radius:12px;
+  }
+
+  .msg__meta{
+    gap:6px;
+    margin-bottom:5px;
+  }
+
+  .md-ul{ padding-left:14px; }
+  .md-ul li::before{ left:-12px; }
+  .md-ol{ padding-left:16px; }
+
+  .composer{
+    padding:8px;
+    gap:6px;
+  }
+
+  #input{
+    padding:10px 12px;
+    max-height:28vh;
+  }
+
+  .send svg{ width:18px; height:18px; }
+
+  .fb-btn{
+    flex:1 1 auto;
+    justify-content:center;
+    text-align:center;
+    padding:10px 10px;
+    font-size:10px;
+  }
+
+  .fb-approval{
+    padding:10px;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE — TINY PHONE  (≤ 380px)
+========================================================= */
+
+@media (max-width:380px){
+  :root{
+    --pad-x:8px;
+    --pad-y:6px;
+    --touch-min:40px;
+  }
+
+  .stage{
+    grid-template-rows:minmax(0, 24fr) minmax(0, 76fr);
+  }
+
+  .brand__name{ font-size:12px; }
+
+  .console__head{
+    font-size:9px;
+    letter-spacing:.10em;
+    padding:7px 9px;
+  }
+
+  .ghost-btn{
+    padding:5px 8px;
+    font-size:9px;
+  }
+
+  .msg__meta{
+    font-size:9px;
+    letter-spacing:.10em;
+  }
+
+  .msg__body{ line-height:1.55; }
+
+  #input{ padding:9px 11px; }
+
+  .md-h4,.md-h5,.md-h6{ letter-spacing:.12em; }
+  .md-code{ padding:8px; font-size:.74em; }
+}
+
+/* =========================================================
+   RESPONSIVE — VERY TINY  (≤ 320px)
+========================================================= */
+
+@media (max-width:320px){
+  .brand__name{ font-size:11px; letter-spacing:.10em; }
+  .pill{ font-size:8px; padding:3px 7px; }
+  .icon-btn{ width:34px; height:34px; }
+  .msg{ padding:7px 9px; }
+  .send{ width:38px; height:38px; }
+  .fb-btn{ font-size:9px; padding:9px 8px; }
+}
+
+/* =========================================================
+   RESPONSIVE — LANDSCAPE PHONES  (short viewports)
+========================================================= */
+
+@media (max-height:520px) and (orientation:landscape){
+  :root{
+    --pad-y:6px;
+    --gap:8px;
+  }
+
+  .stage{
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows:minmax(0, 1fr);
+  }
+
+  .hud{
+    padding:6px 12px;
+    padding-top:calc(6px + var(--sat));
+  }
+
+  .brand__sub{ display:none; }
+
+  .msg{
+    padding:7px 10px;
+    max-width:96%;
+  }
+
+  #input{
+    max-height:24vh;
+    min-height:38px;
+  }
+
+  .send{ width:38px; height:38px; }
+  .send svg{ width:16px; height:16px; }
+
+  .fb-approval__text{ max-height:22vh; }
+}
+
+/* =========================================================
+   RESPONSIVE — ULTRA-WIDE  (≥ 1600px)
+========================================================= */
+
+@media (min-width:1600px){
+  :root{
+    --pad-x:28px;
+    --gap:22px;
+  }
+
+  .stage{
+    grid-template-columns:minmax(0, 1.2fr) minmax(0, 0.9fr);
+    max-width:2200px;
+    margin:0 auto;
+    width:100%;
+  }
+
+  .msg{ max-width:85%; }
+}
+
+@media (min-width:2200px){
+  :root{ --pad-x:40px; --gap:28px; }
+  .stage{ max-width:2600px; }
+  .msg{ max-width:75%; }
+}
+
+/* =========================================================
+   RESPONSIVE — VERY SHORT VIEWPORT  (browser UI takes space)
+========================================================= */
+
+@media (max-height:600px) and (orientation:portrait){
+  .stage{
+    grid-template-rows:minmax(0, 26fr) minmax(0, 74fr);
+  }
+  #input{ max-height:24vh; }
+}
+
+/* =========================================================
+   RESPONSIVE — HOVER-LESS DEVICES (touch): no hover glow
+========================================================= */
+
+@media (hover:none){
+  .icon-btn:hover{
+    background:rgba(0,242,254,.05);
+    border-color:rgba(0,242,254,.25);
+    color:rgba(0,242,254,.85);
+  }
+  .ghost-btn:hover{
+    background:none;
+    border-color:rgba(0,242,254,.25);
+    color:rgba(0,242,254,.75);
+  }
+  .fb-btn:hover{
+    background:rgba(0,242,254,.06);
+    border-color:rgba(0,242,254,.30);
+    color:rgba(0,242,254,.88);
+    box-shadow:none;
+  }
+  .fb-btn--publish:hover{
+    background:rgba(94,247,196,.07);
+    border-color:rgba(94,247,196,.42);
+  }
+  .send:hover:not(:disabled){
+    transform:none;
+    box-shadow:none;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE — POINTER: COARSE (touch) — bigger hit targets
+========================================================= */
+
+@media (pointer:coarse){
+  .icon-btn{ width:40px; height:40px; }
+  .icon-btn svg{ width:16px; height:16px; }
+  .ghost-btn{ padding:8px 12px; }
+  .fb-btn{ min-height:40px; }
+}
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion:reduce){
+  .ring-a,.ring-b,#coreHalo,#corePulse,.brand__dot,.live-dot,.activate__icon{
+    animation:none !important;
+  }
+  .msg{ animation:none; }
+  .msg__body--rich > *{ animation:none; }
+  *{ scroll-behavior:auto !important; }
+}
+
+/* =========================================================
+   PRINT (hide chrome, show transcript cleanly)
+========================================================= */
+
+@media print{
+  body{ background:#fff; color:#000; overflow:visible; }
+  body::after{ display:none; }
+  .hud,.composer,.fb-actions,.fb-btn,.activate,.core-panel{ display:none !important; }
+  .app{ display:block; height:auto; }
+  .stage{ display:block; padding:0; }
+  .console{ border:none; box-shadow:none; background:none; display:block; }
+  .log{ overflow:visible; padding:0; }
+  .msg{ max-width:100%; border-color:#ccc; background:#f6f6f6; color:#000; }
+  .msg__meta,.msg__body{ color:#000 !important; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="activate" id="activate">
+  <div class="activate__inner">
+    <div class="activate__icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="2" width="6" height="12" rx="3"/>
+        <path d="M5 10v1a7 7 0 0 0 14 0v-1"/>
+        <line x1="12" y1="19" x2="12" y2="22"/>
+      </svg>
+    </div>
+    <div class="activate__title">Tap anywhere to begin</div>
+    <div class="activate__sub">Voice mode activates automatically</div>
+  </div>
+</div>
+
+<div class="app">
+
+<header class="hud">
+
+  <div class="brand">
+    <span class="brand__dot"></span>
+    <span class="brand__name">mollaAI</span>
+    <span class="brand__sub">// agent_1_pipeline</span>
+  </div>
+
+  <div class="hud__right">
+
+    <span class="pill" id="voicePill">VOICE · STANDBY</span>
+
+    <button
+      class="icon-btn"
+      id="voiceToggle"
+      type="button"
+      title="Voice output: ON"
+      aria-label="Toggle voice output"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+      </svg>
+    </button>
+
+    <span class="pill" id="connPill">LINK…</span>
+    <span class="pill pill--ghost" id="clock">--:--:--</span>
+
+  </div>
+
+</header>
+
+<main class="stage">
+
+<section class="core-panel">
+
+<svg id="coreSvg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet"
+     role="img" aria-label="Neural core visualiser">
+
+<defs>
+<radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
+  <stop offset="0%" stop-color="#091b2e"/>
+  <stop offset="100%" stop-color="#030508"/>
+</radialGradient>
+
+<radialGradient id="coreGlow" cx="35%" cy="35%" r="65%">
+  <stop offset="0%" stop-color="#ffffff"/>
+  <stop offset="25%" stop-color="#00f2fe"/>
+  <stop offset="65%" stop-color="#7f00ff"/>
+  <stop offset="100%" stop-color="#050714"/>
+</radialGradient>
+
+<filter id="neonGlow" x="-60%" y="-60%" width="220%" height="220%">
+  <feGaussianBlur stdDeviation="5" result="blur"/>
+  <feMerge>
+    <feMergeNode in="blur"/>
+    <feMergeNode in="blur"/>
+    <feMergeNode in="SourceGraphic"/>
+  </feMerge>
+</filter>
+
+<filter id="textGlow" x="-60%" y="-60%" width="220%" height="220%">
+  <feGaussianBlur stdDeviation="2.4" result="blur"/>
+  <feMerge>
+    <feMergeNode in="blur"/>
+    <feMergeNode in="SourceGraphic"/>
+  </feMerge>
+</filter>
+</defs>
+
+<rect width="800" height="600" fill="url(#bgGlow)"/>
+
+<g stroke="rgba(0,242,254,.05)" stroke-width="1">
+  <line x1="0" y1="150" x2="800" y2="150"/>
+  <line x1="0" y1="300" x2="800" y2="300"/>
+  <line x1="0" y1="450" x2="800" y2="450"/>
+  <line x1="200" y1="0" x2="200" y2="600"/>
+  <line x1="400" y1="0" x2="400" y2="600"/>
+  <line x1="600" y1="0" x2="600" y2="600"/>
+</g>
+
+<g class="ring-group ring-a">
+<circle cx="400" cy="300" r="190" fill="none" stroke="rgba(0,242,254,.15)" stroke-width="1" stroke-dasharray="4 8"/>
+<circle cx="400" cy="300" r="130" fill="none" stroke="rgba(0,242,254,.4)" stroke-width="1.5" stroke-dasharray="15 5 45 5"/>
+</g>
+
+<g class="ring-group ring-b">
+<circle cx="400" cy="300" r="160" fill="none" stroke="rgba(127,0,255,.3)" stroke-width="2" stroke-dasharray="120 40 80 20" filter="url(#neonGlow)"/>
+<circle cx="400" cy="300" r="105" fill="none" stroke="rgba(225,0,255,.2)" stroke-width="2" stroke-dasharray="60 30"/>
+</g>
+
+<circle id="coreHalo" cx="400" cy="300" r="75" fill="url(#coreGlow)" filter="url(#neonGlow)"/>
+<circle id="corePulse" cx="400" cy="300" r="75" fill="none" stroke="#00f2fe" stroke-width="1.2"/>
+
+<g fill="#00f2fe" filter="url(#neonGlow)">
+  <rect class="eq-bar" x="340" y="440" width="4" height="20" rx="2"/>
+  <rect class="eq-bar" x="352" y="430" width="4" height="30" rx="2"/>
+  <rect class="eq-bar" x="364" y="415" width="4" height="45" rx="2" fill="#4facfe"/>
+  <rect class="eq-bar" x="376" y="405" width="4" height="55" rx="2" fill="#7f00ff"/>
+  <rect class="eq-bar" x="388" y="395" width="4" height="65" rx="2" fill="#e100ff"/>
+  <rect class="eq-bar" x="400" y="390" width="4" height="70" rx="2" fill="#ffffff"/>
+  <rect class="eq-bar" x="412" y="395" width="4" height="65" rx="2" fill="#e100ff"/>
+  <rect class="eq-bar" x="424" y="405" width="4" height="55" rx="2" fill="#7f00ff"/>
+  <rect class="eq-bar" x="436" y="415" width="4" height="45" rx="2" fill="#4facfe"/>
+  <rect class="eq-bar" x="448" y="430" width="4" height="30" rx="2"/>
+  <rect class="eq-bar" x="460" y="440" width="4" height="20" rx="2"/>
+</g>
+
+<text id="statusText" x="400" y="100" text-anchor="middle"
+      fill="#00f2fe" font-family="ui-monospace,monospace"
+      font-size="12" letter-spacing="2.4" filter="url(#textGlow)">
+NEURAL CORE ACTIVE
+</text>
+
+<text id="modeText" x="400" y="520" text-anchor="middle"
+      fill="#ffffff" font-family="ui-sans-serif,system-ui,sans-serif"
+      font-weight="700" font-size="14" letter-spacing="2.4">
+STANDBY
+</text>
+
+<text id="telemetry" x="400" y="542" text-anchor="middle"
+      fill="#717d96" font-family="ui-monospace,monospace"
+      font-size="11" letter-spacing="1">
+LATENCY: --MS // BUFFER: 100%
+</text>
+
+</svg>
+
+</section>
+
+<section class="console">
+
+<div class="console__head">
+  <div class="console__head-left">
+    <span class="live-dot"></span>
+    <span>TRANSMISSION LOG</span>
+  </div>
+  <button class="ghost-btn" id="clearBtn" type="button">CLEAR</button>
+</div>
+
+<div class="log" id="log">
+  <article class="msg msg--ai">
+    <div class="msg__meta">
+      <span class="msg__who">MOLLA.AI</span>
+      <span class="msg__info">boot</span>
+    </div>
+    <div class="msg__body">
+      Voice session ready. Speak naturally — I'll wait for you to finish.
+    </div>
+  </article>
+</div>
+
+<form class="composer" id="composer" autocomplete="off">
+  <textarea
+    id="input"
+    rows="1"
+    maxlength="4000"
+    placeholder="Or type a message…  (Enter to send · Shift+Enter = newline)"
+  ></textarea>
+
+  <button class="send" id="send" type="submit" aria-label="Send">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 12h15"/>
+      <path d="M13 6l6 6-6 6"/>
+    </svg>
+  </button>
+</form>
+
+</section>
+
+</main>
+
+</div>
+
+<script>
+(() => {
+
+"use strict";
+
+/* =========================================================
+   DOM
+========================================================= */
+
+const $ = s => document.querySelector(s);
+
+const logEl       = $("#log");
+const formEl      = $("#composer");
+const inputEl     = $("#input");
+const sendEl      = $("#send");
+const clearEl     = $("#clearBtn");
+const voiceToggle = $("#voiceToggle");
+const voicePill   = $("#voicePill");
+const statusText  = $("#statusText");
+const modeText    = $("#modeText");
+const telemetry   = $("#telemetry");
+const connPill    = $("#connPill");
+const activateEl  = $("#activate");
+const bars        = Array.from(document.querySelectorAll(".eq-bar"));
+const levels      = bars.map(() => .06);
+
+/* =========================================================
+   STATE
+========================================================= */
+
+let busy = false;
+let speaking = false;
+let listening = false;
+let voiceOn = true;
+
+let voiceMode = false;
+let activated = false;
+
+let boost = 0;
+let energy = .10;
+let timeoutSec = 45;
+
+let currentAIEl = null;
+
+let voices = [];
+let currentUtterance = null;
+
+/* Barge-in */
+let currentReplyText = "";
+let spokenCharIndex = 0;
+let bargeInActive = false;
+let recognitionStarting = false;
+
+/* Sentence-chunked speech */
+let speechQueue = [];
+let speechIndex = 0;
+let speechActive = false;
+let speechUtterances = [];
+
+/* accumulate text across pauses so we never cut the user off */
+let accumulatedText = "";
+let silenceTimer = null;
+let intentionalStop = false;
+let sendInFlight = false;
+
+/* the Facebook draft currently awaiting approval */
+let pendingFB = null;
+
+const SILENCE_DELAY = 1400;
+const RESTART_DELAY = 180;
+
+const synth =
+  "speechSynthesis" in window
+    ? window.speechSynthesis
+    : null;
+
+/* =========================================================
+   CLOCK
+========================================================= */
+
+const clock = $("#clock");
+
+function tickClock(){
+  clock.textContent =
+    new Date().toLocaleTimeString("en-GB", {hour12:false});
+}
+
+tickClock();
+setInterval(tickClock, 1000);
+
+/* =========================================================
+   EQUALIZER
+========================================================= */
+
+function frame(t){
+
+  const active = busy || speaking || listening;
+
+  const idle = .13 + .07 * Math.sin(t / 1100);
+  const target = active ? .92 : Math.min(1, idle + boost);
+
+  energy += (target - energy) * (active ? .075 : .035);
+  boost  *= .985;
+
+  for (let i = 0; i < bars.length; i++){
+
+    const speed  = (speaking ? 90 : (listening ? 120 : 165)) + i * 23;
+    const wave   = .5 + .5 * Math.sin(t / speed + i * .85);
+    const jitter = .5 + .5 * Math.sin(t / (60 + i * 11) + i * 1.7);
+    const want   = .05 + energy * wave * (.55 + .45 * jitter);
+
+    levels[i] += (want - levels[i]) * .24;
+
+    const value = Math.max(.05, Math.min(1, levels[i]));
+    bars[i].style.transform = `scaleY(${value.toFixed(3)})`;
+  }
+
+  requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+
+/* =========================================================
+   BODY STATE
+========================================================= */
+
+function syncBodyState(){
+  document.body.classList.toggle("is-processing", busy);
+  document.body.classList.toggle("is-speaking",   speaking);
+  document.body.classList.toggle("is-listening",  listening);
+}
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function setStatus(headline, mode, tone){
+
+  statusText.textContent = headline;
+  modeText.textContent = mode;
+
+  const bad = tone === "error";
+
+  statusText.setAttribute("fill", bad ? "#ff4757" : "#00f2fe");
+  modeText.setAttribute("fill",   bad ? "#ff4757" : "#ffffff");
+}
+
+function setVoicePill(state){
+
+  const text = {
+    standby:  "VOICE · STANDBY",
+    active:   "VOICE · ACTIVE",
+    listening:"VOICE · LISTENING",
+    thinking: "VOICE · THINKING",
+    speaking: "VOICE · SPEAKING",
+    off:      "VOICE · MUTED",
+    blocked:  "VOICE · BLOCKED"
+  }[state] || "VOICE";
+
+  voicePill.textContent = text;
+  voicePill.classList.remove("pill--voice", "pill--bad", "pill--ok", "pill--ghost");
+
+  if (state === "active" || state === "listening"){
+    voicePill.classList.add("pill--voice");
+  } else if (state === "off"){
+    voicePill.classList.add("pill--ghost");
+  } else if (state === "blocked"){
+    voicePill.classList.add("pill--bad");
+  } else {
+    voicePill.classList.add("pill--ok");
+  }
+}
+
+/* =========================================================
+   TELEMETRY + SCROLL
+========================================================= */
+
+function setTelemetry(ms){
+  telemetry.textContent =
+    ms == null
+      ? "LATENCY: --MS // BUFFER: 100%"
+      : `LATENCY: ${Math.round(ms)}MS // BUFFER: 100%`;
+}
+
+function scrollToEnd(){
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+/* =========================================================
+   VOICE ENGINE — Indian accent priority
+========================================================= */
+
+function loadVoices(){
+  if (!synth) return;
+  try{ voices = synth.getVoices() || []; }
+  catch(e){ voices = []; }
+}
+
+if (synth){
+  loadVoices();
+  synth.onvoiceschanged = loadVoices;
+  setTimeout(loadVoices,200);
+  setTimeout(loadVoices,700);
+  setTimeout(loadVoices,1500);
+  setTimeout(loadVoices,3000);
+}
+
+function pickVoice(){
+
+  if (!voices.length) return null;
+
+  const indianPreferred = [
+    "Microsoft Heera",
+    "Microsoft Ravi",
+    "Google UK English Female",
+    "Google हिन्दी",
+    "Google Hindi",
+    "Microsoft Neerja Online",
+    "Microsoft Neerja",
+    "Microsoft Prabhat Online",
+    "Microsoft Prabhat",
+    "Veena",
+    "Rishi",
+    "Lekha",
+    "Rishi (Enhanced)",
+    "Veena (Enhanced)"
+  ];
+
+  for (const wanted of indianPreferred){
+    const hit = voices.find(v =>
+      (v.name || "").toLowerCase().includes(wanted.toLowerCase()));
+    if (hit) return hit;
+  }
+
+  const indianLocale = voices.find(v =>
+    /^(en-IN|hi-IN|en_IN|hi_IN)/i.test(v.lang || ""));
+  if (indianLocale) return indianLocale;
+
+  const englishPreferred = [
+    "Google UK English Male",
+    "Google US English",
+    "Microsoft Zira",
+    "Microsoft Aria",
+    "Samantha"
+  ];
+  for (const wanted of englishPreferred){
+    const hit = voices.find(v =>
+      (v.name || "").toLowerCase().includes(wanted.toLowerCase()));
+    if (hit) return hit;
+  }
+
+  const anyEnglish = voices.find(v => /^en(-|_|$)/i.test(v.lang || ""));
+  if (anyEnglish) return anyEnglish;
+
+  return voices[0];
+}
+
+/* =========================================================
+   MARKDOWN / SPECIAL-CHARACTER STRIPPING
+========================================================= */
+
+function stripMarkers(input, opts){
+
+  opts = opts || {};
+
+  let s = String(input == null ? "" : input);
+  s = s.replace(/\r\n?/g, "\n");
+
+  s = s.replace(/```[^\n]*\n?([\s\S]*?)```/g, (m, code) => "\n" + code.trim() + "\n");
+  s = s.replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1");
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)");
+  s = s.replace(/^[ \t]*#{1,6}[ \t]+/gm, "");
+  s = s.replace(/^[ \t]*>[ \t]?/gm, "");
+  s = s.replace(/^[ \t]*([-*_])\1{2,}[ \t]*$/gm, "");
+  s = s.replace(/^[ \t]*\/\/+[ \t]?/gm, opts.bullets ? "// " : "");
+  s = s.replace(/^[ \t]*[-*•+][ \t]+/gm, opts.bullets ? "• " : "");
+  s = s.replace(/^[ \t]*(\d+)[.)][ \t]+/gm, opts.bullets ? "$1. " : "");
+
+  s = s.replace(/\*\*\*([^*]+)\*\*\*/g, "$1");
+  s = s.replace(/\*\*([^*]+)\*\*/g, "$1");
+  s = s.replace(/__([^_]+)__/g, "$1");
+  s = s.replace(/(^|[^*\w])\*([^*\n]+)\*/g, "$1$2");
+  s = s.replace(/(^|[^_\w])_([^_\n]+)_/g, "$1$2");
+  s = s.replace(/~~([^~]+)~~/g, "$1");
+  s = s.replace(/`([^`]+)`/g, "$1");
+
+  s = s.replace(/\*\*/g, "");
+  s = s.replace(/^[ \t]*[-–—]{2,}[ \t]*$/gm, "");
+
+  s = s.replace(/[ \t]+$/gm, "");
+  s = s.replace(/\n{3,}/g, "\n\n");
+
+  return s.trim();
+}
+
+/* =========================================================
+   INLINE MARKDOWN → HTML
+========================================================= */
+
+function inlineMd(src){
+
+  let t = escapeHtml(src);
+
+  t = t.replace(/`([^`]+)`/g, '<code class="md-ic">$1</code>');
+
+  t = t.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,
+        '<a class="md-a" href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+  t = t.replace(/\*\*\*([^*]+)\*\*\*/g, "<strong><em>$1</em></strong>");
+  t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  t = t.replace(/__([^_]+)__/g, "<strong>$1</strong>");
+  t = t.replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
+  t = t.replace(/(^|[^_\w])_([^_\n]+)_(?!_)/g, "$1<em>$2</em>");
+  t = t.replace(/~~([^~]+)~~/g, "<del>$1</del>");
+
+  return t;
+}
+
+/* =========================================================
+   BLOCK PARSER → structured DOM
+========================================================= */
+
+function isBlockStart(line){
+  return /^\s*(#{1,6}\s|[-*•+]\s|\d+[.)]\s|>\s?|```|\/\/)/.test(line)
+      || /^\s*([-*_])\1{2,}\s*$/.test(line);
+}
+
+function renderRich(text){
+
+  const src = String(text == null ? "" : text).replace(/\r\n?/g, "\n");
+  const lines = src.split("\n");
+  const out = [];
+
+  let list = null;
+
+  const flushList = () => {
+    if (list){ out.push(list.el); list = null; }
+  };
+
+  let i = 0;
+
+  while (i < lines.length){
+
+    const line = lines[i];
+
+    if (/^\s*```/.test(line)){
+      flushList();
+      const lang = line.replace(/^\s*```/, "").trim();
+      const buf = [];
+      i++;
+      while (i < lines.length && !/^\s*```/.test(lines[i])){
+        buf.push(lines[i]);
+        i++;
+      }
+      i++;
+      const pre = document.createElement("pre");
+      pre.className = "md-code";
+      const code = document.createElement("code");
+      code.textContent = buf.join("\n");
+      if (lang) code.dataset.lang = lang;
+      pre.appendChild(code);
+      out.push(pre);
+      continue;
+    }
+
+    if (/^\s*([-*_])\1{2,}\s*$/.test(line)){
+      flushList();
+      const hr = document.createElement("hr");
+      hr.className = "md-hr";
+      out.push(hr);
+      i++;
+      continue;
+    }
+
+    let m = /^\s*(#{1,6})\s+(.*)$/.exec(line);
+    if (m){
+      flushList();
+      const h = document.createElement("div");
+      h.className = "md-h md-h" + m[1].length;
+      h.innerHTML = inlineMd(m[2]);
+      out.push(h);
+      i++;
+      continue;
+    }
+
+    if (/^\s*>\s?/.test(line)){
+      flushList();
+      const buf = [];
+      while (i < lines.length && /^\s*>\s?/.test(lines[i])){
+        buf.push(lines[i].replace(/^\s*>\s?/, ""));
+        i++;
+      }
+      const q = document.createElement("blockquote");
+      q.className = "md-quote";
+      q.innerHTML = buf.map(inlineMd).join("<br>");
+      out.push(q);
+      continue;
+    }
+
+    m = /^\s*\/\/+\s?(.*)$/.exec(line);
+    if (m){
+      flushList();
+      const c = document.createElement("div");
+      c.className = "md-comment";
+      c.innerHTML = inlineMd(m[1]) || "&nbsp;";
+      out.push(c);
+      i++;
+      continue;
+    }
+
+    m = /^\s*[-*•+]\s+(.*)$/.exec(line);
+    if (m){
+      if (!list || list.type !== "ul"){
+        flushList();
+        const ul = document.createElement("ul");
+        ul.className = "md-ul";
+        list = { type:"ul", el:ul };
+      }
+      const li = document.createElement("li");
+      li.innerHTML = inlineMd(m[1]);
+      list.el.appendChild(li);
+      i++;
+      continue;
+    }
+
+    m = /^\s*(\d+)[.)]\s+(.*)$/.exec(line);
+    if (m){
+      if (!list || list.type !== "ol"){
+        flushList();
+        const ol = document.createElement("ol");
+        ol.className = "md-ol";
+        list = { type:"ol", el:ol };
+      }
+      const li = document.createElement("li");
+      li.innerHTML = inlineMd(m[2]);
+      list.el.appendChild(li);
+      i++;
+      continue;
+    }
+
+    if (!line.trim()){
+      flushList();
+      i++;
+      continue;
+    }
+
+    flushList();
+    const buf = [line];
+    i++;
+    while (i < lines.length && lines[i].trim() && !isBlockStart(lines[i])){
+      buf.push(lines[i]);
+      i++;
+    }
+    const p = document.createElement("p");
+    p.className = "md-p";
+    p.innerHTML = buf.map(inlineMd).join("<br>");
+    out.push(p);
+  }
+
+  flushList();
+  return out;
+}
+
+function paintRich(el, text){
+  if (!el) return;
+  el.classList.add("msg__body--rich");
+  el.innerHTML = "";
+  const blocks = renderRich(text);
+  for (const b of blocks) el.appendChild(b);
+  scrollToEnd();
+}
+
+/* =========================================================
+   TEXT PREPROCESSING (for TTS)
+========================================================= */
+
+function prepareSpeech(raw){
+
+  let s = stripMarkers(raw, { bullets:false });
+
+  s = s.replace(/\s+/g, " ").trim();
+
+  const map = {
+    "\\bDr\\.": "Doctor",
+    "\\bMr\\.": "Mister",
+    "\\bMrs\\.": "Missus",
+    "\\bMs\\.": "Miss",
+    "\\betc\\.": "etcetera",
+    "\\be\\.g\\.": "for example",
+    "\\bi\\.e\\.": "that is",
+    "\\bvs\\.?": "versus",
+    "\\bAI\\b": "A I",
+    "\\bUI\\b": "U I",
+    "\\bAPI\\b": "A P I",
+    "\\bURL\\b": "U R L",
+    "\\bID\\b": "I D",
+    "\\bOK\\b": "okay",
+    "\\bok\\b": "okay"
+  };
+
+  for (const k in map){
+    s = s.replace(new RegExp(k, "g"), map[k]);
+  }
+
+  s = s.replace(/\.{2,}/g, ", ");
+  s = s.replace(/([!?.,])\1+/g, "$1");
+
+  return s.trim();
+}
+
+function chunkSentences(text){
+
+  if (!text) return [];
+
+  const rough = text
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const chunks = [];
+
+  for (const sentence of rough){
+
+    if (sentence.length <= 140){
+      chunks.push(sentence);
+      continue;
+    }
+
+    const parts = sentence
+      .split(/(?<=[,;:])\s+|\s+—\s+|\s+–\s+/)
+      .map(p => p.trim())
+      .filter(Boolean);
+
+    let buffer = "";
+    for (const p of parts){
+      if ((buffer + " " + p).trim().length <= 140){
+        buffer = (buffer + " " + p).trim();
+      } else {
+        if (buffer) chunks.push(buffer);
+        buffer = p;
+      }
+    }
+    if (buffer) chunks.push(buffer);
+  }
+
+  return chunks.filter(c => c.length > 0);
+}
+
+/* =========================================================
+   ECHO DETECTION
+========================================================= */
+
+function normalize(str){
+  return (str || "")
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isLikelyEcho(text){
+
+  if (!currentReplyText) return false;
+
+  const user = normalize(text);
+  if (!user) return true;
+
+  const userWords = user.split(" ").filter(w => w.length > 1);
+  if (userWords.length < 2) return false;
+
+  const start = Math.max(0, spokenCharIndex - 140);
+  const end   = Math.min(currentReplyText.length, spokenCharIndex + 80);
+  const recent = normalize(currentReplyText.slice(start, end));
+
+  if (!recent) return false;
+
+  let matches = 0;
+  for (const w of userWords){
+    if (recent.includes(w)) matches++;
+  }
+
+  return (matches / userWords.length) > 0.6;
+}
+
+/* =========================================================
+   STOP SPEECH
+========================================================= */
+
+function stopSpeaking(){
+
+  speechActive = false;
+  speechQueue = [];
+  speechIndex = 0;
+  speechUtterances = [];
+
+  if (synth){
+    try{ synth.cancel(); }catch(e){}
+  }
+
+  speaking = false;
+  currentUtterance = null;
+  bargeInActive = false;
+  currentReplyText = "";
+  spokenCharIndex = 0;
+
+  if (currentAIEl) currentAIEl.classList.remove("is-speaking");
+
+  voiceToggle.classList.remove("is-speaking");
+
+  syncBodyState();
+}
+
+/* =========================================================
+   SPEAK — sentence-chunked
+========================================================= */
+
+function speak(text, messageEl=null){
+
+  if (!synth || !voiceOn || !text) return;
+
+  stopSpeaking();
+
+  try{ if (synth.paused) synth.resume(); }catch(e){}
+
+  currentReplyText = prepareSpeech(text);
+  if (messageEl) currentAIEl = messageEl.el;
+
+  const chunks = chunkSentences(currentReplyText);
+  if (!chunks.length){
+    setStatus("NEURAL CORE ACTIVE", "LISTENING...");
+    setVoicePill("listening");
+    if (voiceMode) setTimeout(startListening, 280);
+    return;
+  }
+
+  speechQueue = chunks;
+  speechIndex = 0;
+  speechActive = true;
+  speechUtterances = [];
+
+  const voice = pickVoice();
+
+  function speakNext(){
+
+    if (!speechActive) return;
+
+    if (speechIndex >= speechQueue.length){
+
+      speaking = false;
+      bargeInActive = false;
+      currentUtterance = null;
+      speechActive = false;
+
+      if (currentAIEl) currentAIEl.classList.remove("is-speaking");
+      voiceToggle.classList.remove("is-speaking");
+      voiceToggle.title = "Voice output: ON";
+
+      syncBodyState();
+
+      if (busy) return;
+
+      if (voiceMode){
+        setStatus("CRPYTORAJA ACTIVE", "LISTENING...");
+        setVoicePill("listening");
+        setTimeout(startListening, 280);
+      } else {
+        setStatus("CRPYTORAJA ACTIVE", "STANDBY");
+        setVoicePill("standby");
+      }
+      return;
+    }
+
+    const chunkText = speechQueue[speechIndex++];
+
+    const utterance = new SpeechSynthesisUtterance(chunkText);
+
+    if (voice){
+      utterance.voice = voice;
+      utterance.lang  = voice.lang || "en-IN";
+    } else {
+      utterance.lang = "en-IN";
+    }
+
+    utterance.rate   = 0.94;
+    utterance.pitch  = 1.02;
+    utterance.volume = 1.0;
+
+    speechUtterances.push(utterance);
+    currentUtterance = utterance;
+
+    utterance.onboundary = (e) => {
+      if (typeof e.charIndex === "number"){
+        const before = speechQueue.slice(0, speechIndex - 1).join(" ").length;
+        spokenCharIndex = before + e.charIndex;
+      }
+    };
+
+    utterance.onstart = () => {
+
+      if (!speaking){
+        speaking = true;
+        bargeInActive = true;
+
+        if (currentAIEl) currentAIEl.classList.add("is-speaking");
+        voiceToggle.classList.add("is-speaking");
+        voiceToggle.title = "Stop voice output";
+
+        setStatus("CRPYTORAJA ACTIVE", "SPEAKING...");
+        setVoicePill("speaking");
+
+        syncBodyState();
+
+        if (voiceMode) startListening();
+      }
+    };
+
+    const advance = () => {
+
+      if (!speechActive) return;
+      if (currentUtterance !== utterance && speechActive === false) return;
+
+      const pause = /[.!?]$/.test(chunkText) ? 180 : 90;
+      setTimeout(speakNext, pause);
+    };
+
+    utterance.onend   = advance;
+    utterance.onerror = advance;
+
+    try{
+      synth.speak(utterance);
+    } catch (err) {
+      advance();
+    }
+  }
+
+  setTimeout(speakNext, 60);
+}
+
+/* =========================================================
+   VOICE TOGGLE
+========================================================= */
+
+voiceToggle.addEventListener("click", (e) => {
+
+  e.stopPropagation();
+
+  if (speaking){
+    stopSpeaking();
+    voiceToggle.classList.remove("is-off");
+    voiceToggle.title = "Voice output: ON";
+    return;
+  }
+
+  voiceOn = !voiceOn;
+  voiceToggle.classList.toggle("is-off", !voiceOn);
+
+  if (!voiceOn){
+    stopSpeaking();
+    voiceToggle.title = "Voice output: OFF";
+    setVoicePill("off");
+  } else {
+    voiceToggle.title = "Voice output: ON";
+    if (voiceMode) setVoicePill("active");
+    speak("Voice output enabled.");
+  }
+});
+
+/* =========================================================
+   FACEBOOK INTENT DETECTOR
+========================================================= */
+
+function isFacebookIntent(userText){
+
+  const raw = String(userText || "");
+  if (!raw.trim()) return false;
+
+  const t = " " + raw
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim() + " ";
+
+  if (/\b(facebook|fb|meta)\b/.test(t)) return true;
+
+  if (/\b(post|publish|share)\b/.test(t) &&
+      /\b(to|on|via|onto)\b/.test(t))    return true;
+
+  if (/\b(create|make|write|draft|compose|generate)\b[^.]{0,20}\bpost\b/.test(t))
+    return true;
+
+  return false;
+}
+
+/* =========================================================
+   VOICE INTENT MATCHER — auto-post on ANY confirmation
+========================================================= */
+
+const FB_CANCEL_PATTERNS = [
+  /\bcancel\b/, /\bdiscard\b/, /\babort\b/, /\bdelete\b/,
+  /\bdon'?t\s+(send|post|publish|share)\b/,
+  /\bdo\s+not\s+(send|post|publish|share)\b/,
+  /\bnever\s*mind\b/, /\bforget\s+it\b/, /\bleave\s+it\b/,
+  /\bno+\b/, /\bnope\b/, /\bnah\b/,
+  /\bnahi+n?\b/, /\bna\b/, /\bmat\b/,
+  /\bmat\s*(bhejo|karo|kar|post|publish|send)\b/,
+  /\bbhejo\s*mat\b/, /\bkar(o|na)?\s*mat\b/,
+  /\bcancel\s*karo\b/, /\brehne\s*do\b/, /\bchhod\s*do\b/, /\bchhodo\b/
+];
+
+const FB_HOLD_PATTERNS = [
+  /\bwait\b/, /\bhold\s+on\b/, /\bpause\b/, /\bone\s+sec(ond)?\b/,
+  /\bruko?\b/, /\bruk\b/, /\bthoda\s*ruko?\b/, /\bek\s*minute\b/,
+  /\bmaybe\b/, /\bperhaps\b/, /\bnot\s+sure\b/, /\blet\s+me\s+think\b/,
+  /\bsochna\b/, /\bsochta\b/, /\bsochti\b/
+];
+
+const FB_CONFIRM_HINTS = [
+  /\byes+\b/, /\byeah+\b/, /\byep\b/, /\byup\b/, /\bya\b/, /\byaar\b/,
+  /\bsure\b/, /\bok(ay)?\b/, /\balright\b/, /\ball\s*right\b/, /\bfine\b/,
+  /\bconfirm(ed)?\b/, /\bapprove(d)?\b/, /\baccept(ed)?\b/,
+  /\bpublish\b/, /\bpost\b/, /\bsend\b/, /\bshare\b/, /\bdo\s+it\b/,
+  /\bgo\s+ahead\b/, /\bproceed\b/, /\bcontinue\b/, /\bdone\b/,
+  /\bperfect\b/, /\bgreat\b/, /\bsounds?\s+good\b/, /\blooks?\s+good\b/,
+  /\babsolutely\b/, /\bdefinitely\b/, /\bof\s+course\b/, /\bplease\s+do\b/,
+  /\bhaan?\b/, /\bha\b/, /\bji\b/, /\btheek\b/, /\bthik\b/, /\bacha\b/, /\bachha\b/,
+  /\bbilkul\b/, /\bzaroor\b/, /\bsahi\b/, /\bchalo\b/, /\bkaro\b/, /\bkar\s*do\b/,
+  /\bbhej\s*do\b/, /\bbhejo\b/, /\bpost\s*karo\b/, /\bpublish\s*karo\b/, /\bconfirm\s*karo\b/
+];
+
+function matchVoiceVerdict(transcript){
+
+  const raw = String(transcript || "").trim();
+  if (!raw) return null;
+
+  const words = raw.split(/\s+/).filter(Boolean);
+  if (words.length > 6) return null;
+
+  const t = " " + raw
+    .toLowerCase()
+    .replace(/[^\w\s'’]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim() + " ";
+
+  for (const re of FB_CANCEL_PATTERNS){
+    if (re.test(t)) return "cancel";
+  }
+
+  for (const re of FB_HOLD_PATTERNS){
+    if (re.test(t)) return "hold";
+  }
+
+  for (const re of FB_CONFIRM_HINTS){
+    if (re.test(t)) return "confirm";
+  }
+
+  return "confirm";
+}
+
+/* =========================================================
+   FACEBOOK PUBLISH / CANCEL (shared by click + voice)
+========================================================= */
+
+async function runFacebookPublish(entry){
+
+  if (!entry || entry.busy || entry.done) return;
+
+  entry.busy = true;
+  try{ entry.publishBtn.disabled = true; }catch(e){}
+  try{ if (entry.cancelBtn) entry.cancelBtn.disabled = true; }catch(e){}
+
+  entry.el.classList.remove("is-pending");
+  entry.statusEl.textContent = "Publishing to Facebook…";
+
+  setStatus("CRPYTORAJA ACTIVE", "PUBLISHING…");
+  setVoicePill("thinking");
+
+  try{
+
+    const res = await fetch("/api/facebook/publish", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ message: entry.text, approved: true })
+    });
+
+    let data = {};
+    try{ data = await res.json(); }catch(e){ data = {}; }
+
+    if (!res.ok){
+      throw new Error((data && data.error) || "Facebook publishing failed");
+    }
+
+    entry.done = true;
+    entry.statusEl.textContent =
+      "✓ Published successfully. " + String((data && data.response) || "");
+    entry.publishBtn.textContent = "PUBLISHED";
+    entry.publishBtn.disabled = true;
+    if (entry.cancelBtn && entry.cancelBtn.parentNode) entry.cancelBtn.remove();
+
+    if (pendingFB === entry) pendingFB = null;
+
+    setStatus("CRPYTORAJA ACTIVE", "PUBLISHED");
+    setVoicePill("active");
+
+    speak("Published to Facebook successfully.");
+
+  } catch(err) {
+
+    entry.busy = false;
+    entry.el.classList.add("is-pending");
+    entry.statusEl.textContent =
+      "✕ " + ((err && err.message) || "Facebook publishing failed");
+
+    entry.publishBtn.disabled = false;
+    if (entry.cancelBtn) entry.cancelBtn.disabled = false;
+
+    setStatus("CORE FAULT", "PUBLISH FAILED", "error");
+    setVoicePill("standby");
+
+    speak("Facebook publishing failed.");
+
+  } finally {
+
+    scrollToEnd();
+
+    setTimeout(() => {
+      if (voiceMode && !busy && !speaking && !listening) startListening();
+    }, 500);
+  }
+}
+
+function runFacebookCancel(entry){
+
+  if (!entry || entry.busy || entry.done) return;
+
+  if (entry.el && entry.el.parentNode) entry.el.remove();
+  if (entry.postBtn) entry.postBtn.disabled = false;
+
+  if (pendingFB === entry) pendingFB = null;
+
+  setStatus("CRPYTORAJA ACTIVE", voiceMode ? "LISTENING..." : "STANDBY");
+  setVoicePill(voiceMode ? "listening" : "standby");
+
+  speak("Cancelled. Nothing was published.");
+
+  setTimeout(() => {
+    if (voiceMode && !busy && !speaking && !listening) startListening();
+  }, 500);
+}
+
+/* =========================================================
+   SPEECH RECOGNITION
+========================================================= */
+
+const SR =
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
+
+let recognition = null;
+let srSupported = false;
+
+if (SR){
+  srSupported = true;
+  recognition = new SR();
+
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = "en-IN";
+
+  try { recognition.maxAlternatives = 1; } catch(e){}
+}
+
+function clearSilenceTimer(){
+  if (silenceTimer){
+    clearTimeout(silenceTimer);
+    silenceTimer = null;
+  }
+}
+
+function resetSilenceTimer(){
+
+  clearSilenceTimer();
+
+  silenceTimer = setTimeout(() => {
+
+    silenceTimer = null;
+
+    const text = accumulatedText.trim();
+
+    if (!text || busy || sendInFlight) return;
+
+    accumulatedText = "";
+    sendInFlight = true;
+    send(text);
+  }, SILENCE_DELAY);
+}
+
+function startListening(){
+
+  if (!srSupported || !recognition) return;
+  if (listening || recognitionStarting) return;
+  if (busy) return;
+  if (!voiceMode) return;
+
+  recognitionStarting = true;
+  intentionalStop = false;
+
+  try{
+    recognition.start();
+  }catch(e){
+    recognitionStarting = false;
+  }
+}
+
+function stopListening(intentional = true){
+
+  intentionalStop = intentional;
+
+  if (!recognition) return;
+  try{
+    recognition.stop();
+  }catch(e){}
+}
+
+if (recognition){
+
+  recognition.onstart = () => {
+    recognitionStarting = false;
+    listening = true;
+
+    if (!bargeInActive){
+      setStatus("CRPYTORAJA ACTIVE", "LISTENING...");
+      setVoicePill("listening");
+    }
+
+    syncBodyState();
+  };
+
+  recognition.onresult = event => {
+
+    let interim = "";
+    let finalText = "";
+
+    for (let i = event.resultIndex; i < event.results.length; i++){
+      const t = event.results[i][0].transcript;
+      if (event.results[i].isFinal) finalText += t;
+      else interim += t;
+    }
+
+    /* VOICE APPROVAL for a pending Facebook draft */
+    if (finalText.trim() && pendingFB && !pendingFB.busy && !pendingFB.done){
+
+      const verdict = matchVoiceVerdict(finalText);
+
+      if (verdict){
+
+        accumulatedText = "";
+        clearSilenceTimer();
+        inputEl.value = "";
+        resizeInput();
+
+        if (speaking) stopSpeaking();
+
+        addMessage("user", finalText.trim());
+
+        if (verdict === "confirm"){
+          runFacebookPublish(pendingFB);
+        } else if (verdict === "cancel"){
+          runFacebookCancel(pendingFB);
+        } else if (verdict === "hold"){
+          setStatus("CRPYTORAJA ACTIVE", "AWAITING CONFIRM");
+          setVoicePill("active");
+          if (voiceOn){
+            speak("Holding. Say yes when you're ready.");
+          }
+          setTimeout(() => {
+            if (voiceMode && !busy && !speaking && !listening) startListening();
+          }, 900);
+        }
+
+        return;
+      }
+    }
+
+    if (finalText.trim()){
+      accumulatedText =
+        (accumulatedText ? accumulatedText + " " : "") + finalText.trim();
+    }
+
+    const preview = (accumulatedText + (interim ? " " + interim : "")).trim();
+    if (preview){
+      inputEl.value = preview;
+      resizeInput();
+    }
+
+    if (speaking && bargeInActive && preview.length >= 3){
+      if (!isLikelyEcho(preview)){
+        if (currentAIEl) currentAIEl.classList.add("is-interrupted");
+        stopSpeaking();
+        setStatus("CRPYTORAJA ACTIVE", "LISTENING...");
+        setVoicePill("listening");
+        if (voiceMode && !listening){
+          setTimeout(startListening, 80);
+        }
+      }
+    }
+
+    resetSilenceTimer();
+  };
+
+  recognition.onerror = event => {
+
+    recognitionStarting = false;
+    listening = false;
+    syncBodyState();
+
+    if (event.error === "not-allowed" ||
+        event.error === "service-not-allowed"){
+
+      voiceMode = false;
+      setStatus("CORE FAULT", "MIC BLOCKED", "error");
+      setVoicePill("blocked");
+
+      addMessage(
+        "ai",
+        "Microphone blocked. Voice mode requires https:// or http://localhost. " +
+        "Type a message below to chat instead.",
+        {error:true}
+      );
+      return;
+    }
+  };
+
+  recognition.onend = () => {
+
+    recognitionStarting = false;
+    listening = false;
+    syncBodyState();
+
+    if (intentionalStop){
+      intentionalStop = false;
+      return;
+    }
+
+    if (voiceMode && !busy && !speaking){
+      setTimeout(() => {
+        if (voiceMode && !busy && !speaking && !listening){
+          startListening();
+        }
+      }, RESTART_DELAY);
+    } else if (!voiceMode && !busy && !speaking){
+      setStatus("NEURAL CORE ACTIVE", "STANDBY");
+      setVoicePill("standby");
+    }
+  };
+}
+
+/* =========================================================
+   ACTIVATION
+========================================================= */
+
+function activateVoiceMode(){
+
+  if (activated) return;
+  activated = true;
+
+  activateEl.classList.add("is-hidden");
+
+  if (!srSupported){
+    setStatus("CRPYTORAJA ACTIVE", "VOICE UNSUPPORTED", "error");
+    setVoicePill("blocked");
+    addMessage(
+      "ai",
+      "This browser doesn't support speech recognition. " +
+      "Type a message below to chat.",
+      {error:true}
+    );
+    return;
+  }
+
+  voiceMode = true;
+  setVoicePill("active");
+
+  speak("Namaste. Voice mode active. I'm listening.");
+
+  setTimeout(() => {
+    if (!speaking) startListening();
+  }, 2200);
+}
+
+["click","touchstart","keydown"].forEach(evt => {
+  document.addEventListener(evt, activateVoiceMode, { once:true, passive:true });
+});
+
+inputEl.addEventListener("focus", () => {
+  if (!activated) activateVoiceMode();
+});
+
+/* =========================================================
+   RESPONSE EXTRACTION
+========================================================= */
+
+function extractReply(data){
+
+  if (data == null) return "";
+  if (typeof data === "string") return data;
+  if (typeof data.response === "string") return data.response;
+  if (typeof data.text     === "string") return data.text;
+  if (typeof data.message  === "string") return data.message;
+  if (typeof data.reply    === "string") return data.reply;
+  if (typeof data.answer   === "string") return data.answer;
+  if (typeof data.output   === "string") return data.output;
+
+  if (data.response && typeof data.response === "object"){
+    return extractReply(data.response);
+  }
+
+  try{ return JSON.stringify(data); }catch(e){ return ""; }
+}
+
+/* =========================================================
+   MESSAGE RENDERING
+========================================================= */
+
+function addMessage(role, text, meta){
+
+  meta = meta || {};
+
+  const el = document.createElement("article");
+  el.className = "msg msg--" + role + (meta.error ? " is-error" : "");
+
+  const head = document.createElement("div");
+  head.className = "msg__meta";
+
+  const who = document.createElement("span");
+  who.className = "msg__who";
+  who.textContent = role === "user" ? "YOU" : "MOLLA.AI";
+
+  const info = document.createElement("span");
+  info.className = "msg__info";
+
+  const bits = [];
+  if (meta.elapsed != null) bits.push(Number(meta.elapsed).toFixed(2) + "s");
+  if (meta.request_id)      bits.push("#" + meta.request_id);
+  info.textContent = bits.join(" · ");
+
+  head.appendChild(who);
+  head.appendChild(info);
+
+  const body = document.createElement("div");
+  body.className = "msg__body";
+  body.textContent = text;
+
+  el.append(head, body);
+  logEl.appendChild(el);
+  scrollToEnd();
+
+  return { el, body };
+}
+
+/* =========================================================
+   TYPING
+========================================================= */
+
+function addTyping(){
+  const el = document.createElement("article");
+  el.className = "msg msg--ai is-typing";
+  el.innerHTML = `<div class="typing"><i></i><i></i><i></i></div>`;
+  logEl.appendChild(el);
+  scrollToEnd();
+  return el;
+}
+
+/* =========================================================
+   TYPEWRITER
+========================================================= */
+
+function typewriter(el, text){
+
+  return new Promise(resolve => {
+
+    const plain = stripMarkers(text, { bullets:true });
+    const total = plain.length;
+
+    if (total === 0){
+      paintRich(el, text);
+      resolve();
+      return;
+    }
+
+    const chunk = Math.max(1, Math.ceil(total / 60));
+    let i = 0;
+
+    el.textContent = "";
+
+    const cursor = document.createElement("span");
+    cursor.className = "cursor";
+    el.appendChild(cursor);
+
+    function step(){
+
+      i = Math.min(total, i + chunk);
+
+      el.textContent = plain.slice(0, i);
+      el.appendChild(cursor);
+      scrollToEnd();
+
+      if (i < total){
+        requestAnimationFrame(step);
+      } else {
+        cursor.remove();
+        paintRich(el, text);
+        resolve();
+      }
+    }
+
+    step();
+  });
+}
+
+/* =========================================================
+   FACEBOOK — APPROVAL PANEL (click OR voice)
+========================================================= */
+
+function escapeHtml(value){
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function addFacebookActions(messageEl, messageText, autoOpen){
+
+  if (!messageEl || !messageEl.el || !messageText) return;
+
+  const postText = stripMarkers(messageText, { bullets:true });
+
+  const actions = document.createElement("div");
+  actions.className = "fb-actions";
+
+  const postBtn = document.createElement("button");
+  postBtn.type = "button";
+  postBtn.className = "fb-btn";
+  postBtn.textContent = "POST TO FACEBOOK";
+  postBtn.title = "Review this response before publishing it to Facebook";
+
+  postBtn.addEventListener("click", () => {
+    if (messageEl.el.querySelector(".fb-approval")) return;
+    openApproval();
+  });
+
+  actions.appendChild(postBtn);
+  messageEl.el.appendChild(actions);
+
+  function openApproval(){
+
+    if (messageEl.el.querySelector(".fb-approval")) return;
+
+    const approval = document.createElement("div");
+    approval.className = "fb-approval is-pending";
+
+    const title = document.createElement("div");
+    title.className = "fb-approval__title";
+    title.textContent = "FACEBOOK · VOICE CONFIRMATION READY";
+
+    const body = document.createElement("div");
+    body.className = "fb-approval__text";
+    body.textContent = postText;
+
+    const warning = document.createElement("div");
+    warning.className = "fb-approval__warning";
+    warning.textContent =
+      "Nothing has been published yet. Review the exact text above. " +
+      "Publishing happens when you confirm by voice — or press CONFIRM & PUBLISH.";
+
+    const voiceHint = document.createElement("div");
+    voiceHint.className = "fb-approval__voice";
+    voiceHint.textContent =
+      "🎙 Say YES / OK / HAAN / BHEJ DO / GO AHEAD to auto-post · " +
+      "Say CANCEL / NAHI / MAT BHEJO to discard · Say WAIT to hold.";
+
+    const btns = document.createElement("div");
+    btns.className = "fb-actions";
+
+    const publishBtn = document.createElement("button");
+    publishBtn.type = "button";
+    publishBtn.className = "fb-btn fb-btn--publish";
+    publishBtn.textContent = "CONFIRM & PUBLISH";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "fb-btn fb-btn--cancel";
+    cancelBtn.textContent = "CANCEL";
+
+    const statusEl = document.createElement("div");
+    statusEl.className = "fb-status";
+    statusEl.textContent =
+      "Awaiting confirmation — simply say yes / ok / haan to auto-post.";
+
+    btns.append(publishBtn, cancelBtn);
+    approval.append(title, body, warning, voiceHint, btns, statusEl);
+    messageEl.el.appendChild(approval);
+
+    postBtn.disabled = true;
+    scrollToEnd();
+
+    const entry = {
+      el: approval,
+      text: postText,
+      publishBtn, cancelBtn, statusEl, postBtn,
+      busy: false,
+      done: false
+    };
+
+    publishBtn.addEventListener("click", () => runFacebookPublish(entry));
+    cancelBtn.addEventListener("click",  () => runFacebookCancel(entry));
+
+    pendingFB = entry;
+
+    if (!speaking){
+      setStatus("CRPYTORAJA ACTIVE", "AWAITING CONFIRM");
+      setVoicePill("active");
+    }
+  }
+
+  if (autoOpen){
+    setTimeout(openApproval, 120);
+  }
+}
+
+/* =========================================================
+   SEND
+========================================================= */
+
+async function send(raw){
+
+  const text = (raw || "").trim();
+  if (!text || busy) return;
+
+  stopSpeaking();
+  clearSilenceTimer();
+
+  if (listening) stopListening(true);
+
+  busy = true;
+  syncBodyState();
+
+  sendEl.disabled = true;
+  inputEl.value = "";
+  resizeInput();
+
+  accumulatedText = "";
+
+  if (pendingFB && !pendingFB.busy && !pendingFB.done){
+    pendingFB = null;
+  }
+
+  addMessage("user", text);
+
+  setStatus("CRPYTORAJA ACTIVE", "PROCESSING…");
+  setVoicePill("thinking");
+  setTelemetry(null);
+
+  const typing = addTyping();
+  const t0 = performance.now();
+
+  const liveTimer = setInterval(
+    () => setTelemetry(performance.now() - t0),
+    100
+  );
+
+  const ctrl = new AbortController();
+  const hardTimeout = (timeoutSec + 10) * 1000;
+  const killTimer = setTimeout(() => ctrl.abort(), hardTimeout);
+
+  try {
+
+    const res = await fetch("/api/chat", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ message: text }),
+      signal: ctrl.signal
+    });
+
+    const rawResponse = await res.text();
+    let data;
+    try { data = JSON.parse(rawResponse); }
+    catch(e){ data = { response: rawResponse }; }
+
+    if (!res.ok){
+      throw new Error((data && data.error) || "HTTP " + res.status);
+    }
+
+    typing.remove();
+
+    const reply = extractReply(data).trim();
+    const elapsedMs = (data && data.elapsed != null)
+      ? data.elapsed * 1000
+      : performance.now() - t0;
+
+    if (!reply){
+
+      addMessage("ai", "The pipeline returned an empty response.", {error:true});
+      setStatus("CORE FAULT", "NO DATA", "error");
+      setVoicePill("standby");
+      setTelemetry(null);
+
+      setTimeout(() => {
+        if (voiceMode){
+          setStatus("CRPYTORAJA ACTIVE", "LISTENING...");
+          setVoicePill("listening");
+          startListening();
+        }
+      }, 2600);
+      return;
+    }
+
+    const message = addMessage("ai", "", {
+      elapsed: elapsedMs / 1000,
+      request_id: data && data.request_id
+    });
+
+    currentAIEl = message.el;
+    setTelemetry(elapsedMs);
+    boost = .6;
+
+    if (voiceOn){
+      speak(reply, message);
+    } else {
+      setStatus("CRPYTORAJA ACTIVE", "READY...");
+      setVoicePill("active");
+      if (voiceMode) setTimeout(startListening, 400);
+    }
+
+    typewriter(message.body, reply);
+
+    if (isFacebookIntent(text)){
+      addFacebookActions(message, reply, true);
+    }
+
+  } catch(err) {
+
+    typing.remove();
+
+    const isAbort = err && err.name === "AbortError";
+    const msg = isAbort
+      ? "Transmission aborted — no response within " +
+        Math.round(hardTimeout / 1000) + "s."
+      : (err && err.message) || "Unknown pipeline error";
+
+    addMessage("ai", msg, {error:true});
+    setStatus("CORE FAULT", "RETRY", "error");
+    setVoicePill("standby");
+    setTelemetry(null);
+
+    setTimeout(() => {
+      if (voiceMode){
+        setStatus("CRPYTORAJA ACTIVE", "LISTENING...");
+        setVoicePill("listening");
+        startListening();
+      }
+    }, 2600);
+
+  } finally {
+    clearInterval(liveTimer);
+    clearTimeout(killTimer);
+    busy = false;
+    sendEl.disabled = false;
+    sendInFlight = false;
+    syncBodyState();
+    if (!voiceMode) inputEl.focus();
+  }
+}
+
+/* =========================================================
+   INPUT
+========================================================= */
+
+function resizeInput(){
+  inputEl.style.height = "auto";
+  const maxH = Math.min(160, window.innerHeight * 0.32);
+  const next = Math.min(inputEl.scrollHeight, maxH);
+  inputEl.style.height = Math.max(44, next) + "px";
+}
+
+inputEl.addEventListener("input", resizeInput);
+
+inputEl.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey){
+    event.preventDefault();
+    send(inputEl.value);
+  }
+});
+
+formEl.addEventListener("submit", event => {
+  event.preventDefault();
+  send(inputEl.value);
+});
+
+/* =========================================================
+   CLEAR
+========================================================= */
+
+clearEl.addEventListener("click", (e) => {
+  e.stopPropagation();
+  stopSpeaking();
+  clearSilenceTimer();
+  accumulatedText = "";
+  pendingFB = null;
+  logEl.innerHTML = "";
+  if (voiceMode){
+    setStatus("CRPYTORAJA ACTIVE", "LISTENING...");
+    setVoicePill("listening");
+  } else {
+    setStatus("CRPYTORAJA ACTIVE", "STANDBY");
+    setVoicePill("standby");
+  }
+  setTelemetry(null);
+  if (!voiceMode) inputEl.focus();
+});
+
+/* =========================================================
+   HEALTH
+========================================================= */
+
+async function checkHealth(){
+
+  try {
+    const res = await fetch("/api/health", { cache:"no-store" });
+    if (!res.ok) throw new Error("bad status");
+
+    const data = await res.json();
+
+    if (data.timeout_seconds){
+      timeoutSec = Number(data.timeout_seconds);
+    }
+
+    connPill.textContent = "LINK OK · " + timeoutSec + "s";
+    connPill.classList.remove("pill--bad");
+    connPill.classList.add("pill--ok");
+
+  } catch(e) {
+    connPill.textContent = "LINK DOWN";
+    connPill.classList.remove("pill--ok");
+    connPill.classList.add("pill--bad");
+  }
+}
+
+checkHealth();
+setInterval(checkHealth, 30000);
+
+/* =========================================================
+   BOOT
+========================================================= */
+
+resizeInput();
+setVoicePill("standby");
+
+setTimeout(resizeInput, 100);
+setTimeout(resizeInput, 500);
+
+/* ★ Recalculate on viewport size changes (rotate / keyboard) */
+let resizeRaf = null;
+function onViewportResize(){
+  if (resizeRaf) cancelAnimationFrame(resizeRaf);
+  resizeRaf = requestAnimationFrame(() => {
+    resizeInput();
+  });
+}
+window.addEventListener("resize", onViewportResize);
+window.addEventListener("orientationchange", () => {
+  setTimeout(resizeInput, 250);
+});
+
+/* ★ Visual viewport (mobile keyboard aware) */
+if (window.visualViewport){
+  window.visualViewport.addEventListener("resize", onViewportResize);
+  window.visualViewport.addEventListener("scroll", onViewportResize);
+}
+
+document.addEventListener("visibilitychange", () => {
+
+  if (document.hidden){
+    stopSpeaking();
+    clearSilenceTimer();
+    if (voiceMode) stopListening(true);
+  } else {
+    if (voiceMode && !busy && !speaking){
+      setTimeout(startListening, 300);
+    }
+  }
+});
+
+window.addEventListener("beforeunload", () => {
+  stopSpeaking();
+  clearSilenceTimer();
+  if (voiceMode) stopListening(true);
+});
+
+setTimeout(loadVoices, 500);
+setTimeout(loadVoices, 1500);
+setTimeout(loadVoices, 3000);
+
+})();
+</script>
+
+</body>
+</html>
