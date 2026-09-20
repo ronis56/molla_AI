@@ -1,7 +1,8 @@
 Flask
+gunicorn
 python-dotenv
 langchain
-langchain-google-genai
 langchain-community
-requests
+langchain-google-genai
 duckduckgo-search
+requests
